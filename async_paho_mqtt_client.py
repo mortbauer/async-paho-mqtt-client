@@ -15,7 +15,7 @@ class AsyncClient:
         self.loop = loop or asyncio.get_event_loop()
         self.reconnect_interval = reconnect_interval
         self._reconnector_loop = None
-        self.client_id = client_id or username or None
+        self.client_id = client_id or None
         self.client = client or paho.Client(self.client_id)
         if username is not None and password is not None:
             self.client.username_pw_set(username,password)
