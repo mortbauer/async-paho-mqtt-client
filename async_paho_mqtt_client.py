@@ -6,7 +6,7 @@ import logging
 import paho.mqtt.client as paho
 
 class AsyncClient:
-    def __init__(self,client=None,host='127.0.0.1',port=1883,loop=None,username=None,password:str=None,reconnect_interval=5,keepalive=60,ca_cert=None):
+    def __init__(self,client=None,host='127.0.0.1',port=1883,loop=None,client_id=None,username=None,password:str=None,reconnect_interval=5,keepalive=60,ca_cert=None):
         self.logger = logging.getLogger('.'.join((__name__,host,str(port))))
         self.host = host
         self.keepalive = keepalive
@@ -15,7 +15,7 @@ class AsyncClient:
         self.loop = loop or asyncio.get_event_loop()
         self.reconnect_interval = reconnect_interval
         self._reconnector_loop = None
-        self.client_id = username or None
+        self.client_id = client_id or username or None
         self.client = client or paho.Client(self.client_id)
         if username is not None and password is not None:
             self.client.username_pw_set(username,password)
