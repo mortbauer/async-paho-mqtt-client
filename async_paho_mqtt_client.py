@@ -23,7 +23,7 @@ class AsyncClient:
             self.client.tls_set(ca_cert)
         self._misc_loop = None
         self.connected = False
-        self.client.will_set(f'{self.client_id}/state',json.dumps({'connected':False}))
+        self.client.will_set(f'{self.client_id}/state',json.dumps({'connected':False}),retain=True)
         self.client.on_socket_open = self._on_socket_open
         self.client.on_socket_close = self._on_socket_close
         self.client.on_socket_register_write = self._on_socket_register_write
