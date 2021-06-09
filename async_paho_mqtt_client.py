@@ -29,7 +29,9 @@ class AsyncClient:
         self.client.on_socket_register_write = self._on_socket_register_write
         self.client.on_socket_unregister_write = self._on_socket_unregister_write
         self.on_connect = [self.notify_birth]
+        self.on_disconnect = []
         self.client.on_connect = self._handle_on_connect
+        self.client.on_disconnect = self._handle_on_disconnect
 
     def _handle_on_connect(self, client, userdata, flags, rc, properties=None):
         for on_connect_handler in self.on_connect:
@@ -38,6 +40,21 @@ class AsyncClient:
             except:
                 self.logger.exception('Failed handling connect')
         self.logger.info('Connected to %s:%s',self.host,self.port)
+
+    def subscribe(self,*args,**kwargs):
+        self.client.subscribe(*args,**kwargs)
+
+    def message_callback_add(self,*args,**kwargs):
+        self.client.message_callback_add(*args,**kwargs)
+
+    def _handle_on_disconnect(self,*args,**kwargs):
+        for on_disconnect_handler in self.on_disconnect:
+            try:
+                on_disconnect_handler(*args,**kwargs)
+            except:
+                self.logger.exception('Failed handling disconnect')
+        self.logger.warning('Disconnected from %s:%s',self.host,self.port)
+
 
     def _on_socket_open(self, client, userdata, sock):
         self.logger.debug("MQTT socket opened")
