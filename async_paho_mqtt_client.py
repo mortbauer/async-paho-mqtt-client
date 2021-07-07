@@ -33,7 +33,7 @@ class AsyncClient:
         self.client.on_connect = self._handle_on_connect
         self.client.on_disconnect = self._handle_on_disconnect
 
-    def _handle_on_connect(self, client, userdata, flags, rc, properties=None):
+    def _handle_on_connect(self, *args,**kwargs):
         for on_connect_handler in self.on_connect:
             try:
                 on_connect_handler(client,userdata,flags,rc,properties=properties)
