@@ -6,7 +6,19 @@ import logging
 import paho.mqtt.client as paho
 
 class AsyncClient:
-    def __init__(self,client=None,host='127.0.0.1',port=1883,loop=None,client_id=None,username=None,password:str=None,reconnect_interval=5,keepalive=60,ca_cert=None):
+    def __init__(
+            self,
+            client=None,
+            host='127.0.0.1',
+            port=1883,
+            loop=None,
+            client_id=None,
+            username=None,
+            password:str=None,
+            reconnect_interval=5,
+            keepalive=60,
+            ca_cert=None,
+        ):
         self.logger = logging.getLogger('.'.join((__name__,host,str(port))))
         self.host = host
         self.keepalive = keepalive
@@ -23,25 +35,27 @@ class AsyncClient:
             self.client.tls_set(ca_cert)
         self._misc_loop = None
         self.connected = False
+        self.on_connect = [self.notify_birth]
+        self.on_disconnect = []
         self.client.will_set(f'{self.client_id}/state',json.dumps({'connected':False}),retain=True)
         self.client.on_socket_open = self._on_socket_open
         self.client.on_socket_close = self._on_socket_close
         self.client.on_socket_register_write = self._on_socket_register_write
         self.client.on_socket_unregister_write = self._on_socket_unregister_write
-        self.on_connect = [self.notify_birth]
-        self.on_disconnect = []
         self.client.on_connect = self._handle_on_connect
         self.client.on_disconnect = self._handle_on_disconnect
 
     def _handle_on_connect(self, *args,**kwargs):
         for on_connect_handler in self.on_connect:
             try:
-                on_connect_handler(client,userdata,flags,rc,properties=properties)
+                res = on_connect_handler(*args,**kwargs)
+                if asyncio.iscoroutine(res):
+                    self.loop.create_task(res)
             except:
                 self.logger.exception('Failed handling connect')
         self.logger.info('Connected to %s:%s',self.host,self.port)
 
-    def subscribe(self,*args,**kwargs):
+    async def subscribe(self,*args,**kwargs):
         self.client.subscribe(*args,**kwargs)
 
     def message_callback_add(self,*args,**kwargs):
@@ -50,7 +64,7 @@ class AsyncClient:
     def _handle_on_disconnect(self,*args,**kwargs):
         for on_disconnect_handler in self.on_disconnect:
             try:
-                on_disconnect_handler(*args,**kwargs)
+                self.loop.create_task(on_disconnect_handler(*args,**kwargs))
             except:
                 self.logger.exception('Failed handling disconnect')
         self.logger.warning('Disconnected from %s:%s',self.host,self.port)
@@ -135,13 +149,13 @@ class AsyncClient:
             self._misc_loop.cancel()
         self.logger.info('Stopped')
 
-    def publish(self,topic,payload,**kwargs):
+    async def publish(self,topic,payload,**kwargs):
         self.client.publish(f'{self.client_id}/{topic}',payload,**kwargs)
 
     @staticmethod
     def timestamp():
         return time.time()
 
-    def notify_birth(self,*args,**kwargs):
-        self.publish('state',json.dumps({'connected':True,'at':self.timestamp()}),retain=True)
+    async def notify_birth(self,*args,**kwargs):
+        await self.publish('state',json.dumps({'connected':True,'at':self.timestamp()}),retain=True)
 
