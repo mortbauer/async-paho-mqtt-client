@@ -64,7 +64,9 @@ class AsyncClient:
     def _handle_on_disconnect(self,*args,**kwargs):
         for on_disconnect_handler in self.on_disconnect:
             try:
-                self.loop.create_task(on_disconnect_handler(*args,**kwargs))
+                res = on_disconnect_handler(*args,**kwargs)
+                if asyncio.iscoroutine(res):
+                    self.loop.create_task(res)
             except:
                 self.logger.exception('Failed handling disconnect')
         self.logger.warning('Disconnected from %s:%s',self.host,self.port)
