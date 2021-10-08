@@ -18,6 +18,8 @@ class AsyncClient:
             reconnect_interval=5,
             keepalive=60,
             ca_cert=None,
+            client_cert=None,
+            client_key=None,
         ):
         self.logger = logging.getLogger('.'.join((__name__,host,str(port))))
         self.host = host
@@ -31,7 +33,9 @@ class AsyncClient:
         self.client = client or paho.Client(self.client_id)
         if username is not None and password is not None:
             self.client.username_pw_set(username,password)
-        if ca_cert:
+        if ca_cert and client_cert:
+            self.client.tls_set(ca_cert,client_cert,client_key)
+        elif ca_cert:
             self.client.tls_set(ca_cert)
         self._misc_loop = None
         self.connected = False
