@@ -20,6 +20,8 @@ class AsyncClient:
             ca_cert=None,
             client_cert=None,
             client_key=None,
+            tls_context=None,
+            state_key='state',
         ):
         self.logger = logging.getLogger('.'.join((__name__,host,str(port))))
         self.host = host
@@ -31,6 +33,8 @@ class AsyncClient:
         self._reconnector_loop = None
         self.client_id = client_id or None
         self.client = client or paho.Client(self.client_id)
+        if tls_context:
+            self.client.tls_set_context(tls_context)
         if username is not None and password is not None:
             self.client.username_pw_set(username,password)
         if ca_cert and client_cert:
@@ -40,8 +44,9 @@ class AsyncClient:
         self._misc_loop = None
         self.connected = False
         self.on_connect = [self.notify_birth]
+        self.state_key = state_key
         self.on_disconnect = []
-        self.client.will_set(f'{self.client_id}/state',json.dumps({'connected':False}),retain=True)
+        self.client.will_set(f'{self.client_id}/{state_key}',json.dumps({'connected':False}),retain=True)
         self.client.on_socket_open = self._on_socket_open
         self.client.on_socket_close = self._on_socket_close
         self.client.on_socket_register_write = self._on_socket_register_write
@@ -163,5 +168,5 @@ class AsyncClient:
         return time.time()
 
     async def notify_birth(self,*args,**kwargs):
-        await self.publish('state',json.dumps({'connected':True,'at':self.timestamp()}),retain=True)
+        await self.publish(state_key,json.dumps({'connected':True,'at':self.timestamp()}),retain=True)
 
